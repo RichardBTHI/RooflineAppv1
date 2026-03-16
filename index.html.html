@@ -1,0 +1,1516 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Roofline Pro</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<style>
+:root {
+  --navy: #1a2744;
+  --navy-light: #243156;
+  --gold: #c9a84c;
+  --gold-light: #e4c87a;
+  --cream: #f8f4ec;
+  --cream-dark: #ede8dc;
+  --slate: #4a5568;
+  --green: #2d6a4f;
+  --red: #c0392b;
+  --orange: #e07b2a;
+  --white: #ffffff;
+  --radius: 14px;
+  --shadow: 0 4px 24px rgba(26,39,68,0.10);
+  --shadow-lg: 0 8px 40px rgba(26,39,68,0.16);
+}
+* { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+html, body { min-height: 100%; background: var(--cream); font-family: 'DM Sans', sans-serif; color: var(--navy); }
+
+/* ── HEADER ── */
+.app-header { background: var(--navy); position: sticky; top: 0; z-index: 100; box-shadow: 0 2px 16px rgba(0,0,0,0.18); }
+.header-inner { display: flex; align-items: center; justify-content: space-between; padding: 14px 18px; }
+.logo-area { display: flex; align-items: center; gap: 10px; }
+.logo-mark { width: 38px; height: 38px; background: var(--gold); border-radius: 8px; display: flex; align-items: center; justify-content: center; font-family: 'DM Serif Display', serif; font-size: 18px; color: var(--navy); font-weight: bold; }
+.logo-text h1 { font-family: 'DM Serif Display', serif; font-size: 17px; color: var(--white); line-height: 1.1; }
+.logo-text p { font-size: 10px; color: var(--gold-light); letter-spacing: 0.08em; text-transform: uppercase; }
+.quote-ref { font-size: 11px; color: var(--gold-light); text-align: right; }
+.quote-ref strong { display: block; font-size: 13px; color: var(--white); }
+
+/* ── NAV ── */
+.nav-tabs { display: flex; background: var(--navy-light); overflow-x: auto; scrollbar-width: none; }
+.nav-tabs::-webkit-scrollbar { display: none; }
+.nav-tab { flex: 0 0 auto; padding: 10px 16px; font-size: 12px; font-weight: 500; color: rgba(255,255,255,0.55); border: none; background: none; cursor: pointer; border-bottom: 3px solid transparent; white-space: nowrap; transition: all .2s; }
+.nav-tab.active { color: var(--gold-light); border-bottom-color: var(--gold); }
+
+/* ── SECTIONS ── */
+.section { display: none; padding: 16px; }
+.section.active { display: block; }
+
+/* ── CARDS ── */
+.card { background: var(--white); border-radius: var(--radius); padding: 18px; margin-bottom: 14px; box-shadow: var(--shadow); border: 1px solid rgba(201,168,76,0.12); }
+.card-title { font-family: 'DM Serif Display', serif; font-size: 15px; color: var(--navy); margin-bottom: 14px; display: flex; align-items: center; gap: 8px; }
+.card-title .icon { width: 28px; height: 28px; background: var(--cream-dark); border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 14px; }
+
+/* ── FORM ── */
+.field { margin-bottom: 14px; }
+.field label { display: block; font-size: 11px; font-weight: 600; color: var(--slate); text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 5px; }
+.field input, .field select, .field textarea { width: 100%; padding: 11px 14px; border: 1.5px solid var(--cream-dark); border-radius: 10px; font-family: 'DM Sans', sans-serif; font-size: 15px; color: var(--navy); background: var(--cream); appearance: none; transition: border-color .2s, box-shadow .2s; }
+.field input:focus, .field select:focus, .field textarea:focus { outline: none; border-color: var(--gold); box-shadow: 0 0 0 3px rgba(201,168,76,0.15); background: var(--white); }
+.field textarea { resize: vertical; min-height: 80px; }
+.field-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+
+/* ── TOGGLE ── */
+.toggle-group { display: flex; gap: 8px; flex-wrap: wrap; }
+.toggle-btn { padding: 8px 14px; border: 1.5px solid var(--cream-dark); border-radius: 8px; font-size: 13px; font-weight: 500; cursor: pointer; background: var(--cream); color: var(--slate); transition: all .2s; }
+.toggle-btn.active { background: var(--navy); border-color: var(--navy); color: var(--white); }
+
+/* ── ENQUIRY ── */
+.enquiry-btns { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.enquiry-btn { padding: 16px 12px; border: 2px solid var(--cream-dark); border-radius: 12px; background: var(--cream); text-align: center; cursor: pointer; transition: all .2s; }
+.enquiry-btn.active { border-color: var(--gold); background: rgba(201,168,76,0.08); }
+.enquiry-btn span { font-size: 24px; display: block; margin-bottom: 5px; }
+.enquiry-btn p { font-size: 13px; font-weight: 600; color: var(--navy); }
+.enquiry-btn small { font-size: 11px; color: var(--slate); }
+
+/* ── FITTING OPTIONS (2-option only) ── */
+.fitting-options { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.fitting-opt { padding: 14px 10px; border: 2px solid var(--cream-dark); border-radius: 12px; background: var(--cream); text-align: center; cursor: pointer; transition: all .2s; }
+.fitting-opt.active { border-color: var(--navy); background: var(--navy); }
+.fitting-opt.active .fit-icon, .fitting-opt.active .fit-label { color: var(--white); }
+.fitting-opt.active .fit-sub { color: rgba(255,255,255,0.6); }
+.fit-icon { font-size: 22px; display: block; margin-bottom: 4px; }
+.fit-label { font-size: 13px; font-weight: 700; color: var(--navy); display: block; }
+.fit-sub { font-size: 11px; color: var(--slate); display: block; margin-top: 2px; }
+
+/* ── INCLUDED SERVICES (locked) ── */
+.included-services { display: flex; flex-direction: column; gap: 8px; }
+.included-service { display: flex; align-items: center; gap: 12px; padding: 11px 14px; border-radius: 10px; background: rgba(45,106,79,0.07); border: 1.5px solid rgba(45,106,79,0.2); }
+.included-service .svc-icon { font-size: 18px; }
+.included-service .svc-info { flex: 1; }
+.included-service .svc-name { font-size: 13px; font-weight: 600; color: var(--navy); }
+.included-service .svc-price { font-size: 11px; color: var(--slate); }
+.included-service .svc-badge { font-size: 10px; font-weight: 700; text-transform: uppercase; color: var(--green); background: rgba(45,106,79,0.12); padding: 3px 8px; border-radius: 10px; }
+
+/* ── LINE ITEMS ── */
+.line-items { display: flex; flex-direction: column; gap: 10px; }
+.line-item { background: var(--cream); border-radius: 12px; padding: 14px; border: 1.5px solid var(--cream-dark); }
+.line-item-header { display: flex; align-items: flex-start; gap: 10px; margin-bottom: 10px; }
+.line-item-name { font-weight: 700; font-size: 14px; flex: 1; line-height: 1.3; }
+.line-item-remove { width: 28px; height: 28px; border-radius: 50%; border: none; background: rgba(192,57,43,0.12); color: var(--red); font-size: 16px; cursor: pointer; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+/* Per-item colour selector */
+.item-colour-row { margin-bottom: 10px; }
+.item-colour-label { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; color: var(--slate); margin-bottom: 5px; }
+.item-colour-swatches { display: flex; gap: 5px; flex-wrap: wrap; }
+.item-swatch { width: 28px; height: 28px; border-radius: 6px; cursor: pointer; border: 2px solid transparent; transition: all .15s; flex-shrink: 0; }
+.item-swatch.selected { border-color: var(--gold); box-shadow: 0 0 0 2px rgba(201,168,76,0.4); transform: scale(1.12); }
+.item-swatch-name { font-size: 10px; color: var(--slate); margin-left: 4px; align-self: center; }
+.selected-colour-pill { display: inline-flex; align-items: center; gap: 5px; padding: 3px 10px 3px 5px; background: var(--white); border: 1.5px solid var(--cream-dark); border-radius: 20px; font-size: 11px; font-weight: 600; color: var(--navy); margin-top: 6px; }
+.selected-colour-dot { width: 14px; height: 14px; border-radius: 3px; flex-shrink: 0; }
+/* Qty controls */
+.line-item-controls { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.qty-control { display: flex; align-items: center; border: 1.5px solid var(--cream-dark); border-radius: 8px; overflow: hidden; background: var(--white); }
+.qty-btn { width: 36px; height: 38px; border: none; background: none; font-size: 20px; cursor: pointer; color: var(--navy); flex-shrink: 0; line-height: 1; }
+.qty-input { flex: 1; border: none; text-align: center; font-family: 'DM Sans', sans-serif; font-size: 15px; font-weight: 600; color: var(--navy); background: none; min-width: 0; padding: 0; }
+.qty-input:focus { outline: none; }
+.price-display { padding: 10px 14px; background: var(--white); border-radius: 8px; border: 1.5px solid var(--cream-dark); font-size: 15px; font-weight: 600; text-align: center; }
+.line-item-total { text-align: right; font-size: 13px; font-weight: 700; color: var(--navy); margin-top: 8px; border-top: 1px solid var(--cream-dark); padding-top: 8px; }
+
+.add-product-btn { width: 100%; padding: 14px; border: 2px dashed var(--cream-dark); border-radius: 10px; background: none; font-size: 14px; font-weight: 500; color: var(--slate); cursor: pointer; transition: all .2s; display: flex; align-items: center; justify-content: center; gap: 8px; margin-top: 10px; }
+.add-product-btn:active { border-color: var(--gold); background: rgba(201,168,76,0.06); }
+
+/* ── SPECIAL OFFER DISCOUNT BLOCK ── */
+.special-offer-card {
+  background: var(--navy);
+  border-radius: var(--radius);
+  padding: 22px 18px;
+  margin-bottom: 14px;
+  position: relative;
+  overflow: hidden;
+  box-shadow: var(--shadow-lg);
+}
+.special-offer-card::before {
+  content: '';
+  position: absolute; inset: 0;
+  background: repeating-linear-gradient(45deg, rgba(201,168,76,0.06) 0px, rgba(201,168,76,0.06) 1px, transparent 1px, transparent 12px);
+  pointer-events: none;
+}
+.special-offer-card::after {
+  content: '★ SPECIAL OFFER ★';
+  position: absolute; top: 12px; right: -30px;
+  background: var(--gold); color: var(--navy);
+  font-size: 9px; font-weight: 800; letter-spacing: 0.12em;
+  padding: 4px 40px; transform: rotate(45deg);
+  transform-origin: center;
+}
+.offer-header { display: flex; align-items: center; gap: 10px; margin-bottom: 16px; }
+.offer-badge { background: var(--gold); color: var(--navy); border-radius: 8px; width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; font-size: 16px; }
+.offer-title { font-family: 'DM Serif Display', serif; font-size: 18px; color: var(--white); }
+.offer-sub { font-size: 11px; color: rgba(255,255,255,0.55); }
+.discount-hero { text-align: center; padding: 16px 0 10px; }
+.discount-hero-pct { font-family: 'DM Serif Display', serif; font-size: 72px; line-height: 1; color: var(--gold-light); }
+.discount-hero-label { font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.12em; color: rgba(255,255,255,0.5); margin-top: 4px; }
+.offer-savings { background: rgba(201,168,76,0.15); border: 1px solid rgba(201,168,76,0.3); border-radius: 10px; padding: 12px 16px; margin-top: 14px; display: flex; justify-content: space-between; align-items: center; }
+.offer-savings-label { font-size: 12px; color: rgba(255,255,255,0.65); }
+.offer-savings-amount { font-family: 'DM Serif Display', serif; font-size: 20px; color: var(--gold-light); }
+.offer-valid { font-size: 10px; color: rgba(255,255,255,0.4); text-align: center; margin-top: 10px; }
+
+/* ── PRICE TABLE ── */
+.price-table { width: 100%; border-collapse: collapse; font-size: 14px; }
+.price-table tr { border-bottom: 1px solid var(--cream-dark); }
+.price-table tr:last-child { border-bottom: none; }
+.price-table td { padding: 10px 0; }
+.price-table td:last-child { text-align: right; font-weight: 600; }
+.price-table .total-row td { font-size: 18px; font-weight: 700; color: var(--navy); padding-top: 14px; }
+.price-table .total-row td:first-child { font-family: 'DM Serif Display', serif; }
+.vat-note { font-size: 11px; color: var(--slate); margin-top: 6px; text-align: right; }
+
+/* ── OVERRIDE ── */
+.override-field { }
+
+/* ── PAYMENT ── */
+.payment-method { display: flex; flex-direction: column; gap: 8px; }
+.pay-option { display: flex; align-items: center; gap: 12px; padding: 12px 14px; border: 1.5px solid var(--cream-dark); border-radius: 10px; cursor: pointer; transition: all .2s; background: var(--cream); }
+.pay-option.selected { border-color: var(--gold); background: rgba(201,168,76,0.07); }
+.pay-option input { width: 18px; height: 18px; accent-color: var(--gold); }
+.pay-option label { font-size: 14px; font-weight: 500; cursor: pointer; }
+.finance-schedule { margin-top: 10px; }
+.sched-row { display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid var(--cream-dark); font-size: 13px; }
+.sched-row:last-child { border-bottom: none; }
+
+/* ── PHOTOS ── */
+/* Photo flow: add → category picker → grid */
+.photo-add-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 16px; }
+.photo-source-btn { padding: 16px 10px; border: 1.5px solid var(--cream-dark); border-radius: 12px; background: var(--cream); font-size: 13px; font-weight: 500; cursor: pointer; display: flex; flex-direction: column; align-items: center; gap: 6px; color: var(--navy); transition: all .2s; }
+.photo-source-btn:active { border-color: var(--gold); background: white; }
+.photo-source-btn span { font-size: 26px; }
+.hidden-input { display: none; }
+
+/* Category picker */
+.photo-cat-picker { background: var(--navy); border-radius: var(--radius); padding: 18px; margin-bottom: 14px; display: none; }
+.photo-cat-picker.open { display: block; }
+.photo-cat-preview { width: 100%; aspect-ratio: 16/9; border-radius: 10px; object-fit: cover; margin-bottom: 14px; border: 2px solid rgba(255,255,255,0.15); }
+.photo-cat-title { font-family: 'DM Serif Display', serif; font-size: 16px; color: white; margin-bottom: 12px; }
+.photo-cat-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+.photo-cat-btn { padding: 12px 6px; border: 1.5px solid rgba(255,255,255,0.2); border-radius: 10px; background: rgba(255,255,255,0.07); cursor: pointer; text-align: center; transition: all .2s; }
+.photo-cat-btn:active { border-color: var(--gold); background: rgba(201,168,76,0.2); }
+.photo-cat-btn span { font-size: 20px; display: block; margin-bottom: 3px; }
+.photo-cat-btn p { font-size: 11px; font-weight: 600; color: rgba(255,255,255,0.85); }
+.photo-cat-cancel { width: 100%; margin-top: 10px; padding: 12px; border: 1px solid rgba(255,255,255,0.2); border-radius: 10px; background: none; color: rgba(255,255,255,0.55); font-size: 13px; cursor: pointer; }
+
+/* Photo grid */
+.photo-section-label { font-size: 10px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.1em; color: var(--gold); margin: 14px 0 6px; }
+.photo-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-bottom: 4px; }
+.photo-thumb { aspect-ratio: 1; border-radius: 10px; overflow: hidden; position: relative; background: var(--cream-dark); border: 2px solid var(--cream-dark); }
+.photo-thumb img { width: 100%; height: 100%; object-fit: cover; }
+.photo-thumb .remove-photo { position: absolute; top: 4px; right: 4px; width: 22px; height: 22px; background: rgba(192,57,43,0.88); border: none; border-radius: 50%; color: white; font-size: 12px; cursor: pointer; display: flex; align-items: center; justify-content: center; }
+.photo-thumb .photo-label { position: absolute; bottom: 0; left: 0; right: 0; background: rgba(0,0,0,0.52); color: white; font-size: 9px; font-weight: 600; padding: 3px 5px; text-align: center; letter-spacing: 0.04em; }
+.photo-empty { text-align: center; padding: 24px; color: var(--slate); font-size: 13px; border: 1.5px dashed var(--cream-dark); border-radius: 10px; }
+
+/* ── MODAL (product picker) ── */
+.modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.55); z-index: 200; align-items: flex-end; }
+.modal-overlay.open { display: flex; }
+.modal-sheet { background: var(--white); border-radius: 22px 22px 0 0; padding: 24px 18px 36px; width: 100%; max-height: 82vh; overflow-y: auto; animation: slideUp .25s ease-out; }
+.modal-handle { width: 40px; height: 4px; background: var(--cream-dark); border-radius: 2px; margin: 0 auto 20px; }
+.modal-title { font-family: 'DM Serif Display', serif; font-size: 20px; margin-bottom: 16px; }
+.product-category { font-size: 10px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.1em; color: var(--gold); margin: 16px 0 6px; }
+.product-option { padding: 12px 14px; border: 1.5px solid var(--cream-dark); border-radius: 10px; cursor: pointer; background: var(--cream); margin-bottom: 6px; display: flex; align-items: center; justify-content: space-between; }
+.product-option:active { border-color: var(--gold); }
+.product-option h4 { font-size: 14px; font-weight: 600; }
+.product-option p { font-size: 12px; color: var(--slate); margin-top: 1px; }
+.product-option .add-icon { width: 28px; height: 28px; background: var(--navy); border-radius: 50%; display: flex; align-items: center; justify-content: center; color: white; font-size: 18px; flex-shrink: 0; }
+
+/* ── SUMMARY BAR ── */
+.summary-bar { position: fixed; bottom: 0; left: 0; right: 0; background: var(--navy); padding: 14px 18px; display: flex; align-items: center; justify-content: space-between; box-shadow: 0 -4px 20px rgba(0,0,0,0.15); z-index: 50; }
+.summary-bar .total-label { font-size: 11px; color: rgba(255,255,255,0.6); text-transform: uppercase; letter-spacing: 0.06em; }
+.summary-bar .total-amount { font-family: 'DM Serif Display', serif; font-size: 22px; color: var(--gold-light); }
+.summary-bar .view-btn { padding: 10px 18px; background: var(--gold); color: var(--navy); border: none; border-radius: 10px; font-weight: 700; font-size: 14px; cursor: pointer; }
+
+/* ── BUTTONS ── */
+.btn-primary { width: 100%; padding: 16px; background: var(--navy); color: var(--white); border: none; border-radius: 12px; font-family: 'DM Sans', sans-serif; font-size: 15px; font-weight: 600; cursor: pointer; letter-spacing: 0.03em; transition: all .2s; display: flex; align-items: center; justify-content: center; gap: 8px; }
+.btn-gold { width: 100%; padding: 16px; background: var(--gold); color: var(--navy); border: none; border-radius: 12px; font-family: 'DM Sans', sans-serif; font-size: 15px; font-weight: 700; cursor: pointer; transition: all .2s; margin-bottom: 10px; }
+.btn-outline { width: 100%; padding: 14px; background: none; color: var(--navy); border: 2px solid var(--navy); border-radius: 12px; font-family: 'DM Sans', sans-serif; font-size: 15px; font-weight: 600; cursor: pointer; transition: all .2s; }
+.btn-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 10px; }
+
+/* ── STATUS ── */
+.status-chip { display: inline-flex; align-items: center; gap: 5px; padding: 5px 10px; border-radius: 20px; font-size: 11px; font-weight: 600; letter-spacing: 0.04em; }
+.status-chip.draft { background: rgba(74,85,104,0.12); color: var(--slate); }
+.status-chip.ready { background: rgba(45,106,79,0.12); color: var(--green); }
+.status-chip.dot::before { content: ''; width: 7px; height: 7px; border-radius: 50%; background: currentColor; }
+
+/* ── NOTE CHIPS ── */
+.note-chips { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 10px; }
+.note-chip { padding: 5px 12px; background: var(--cream-dark); border-radius: 20px; font-size: 12px; cursor: pointer; border: 1.5px solid transparent; transition: all .2s; }
+.note-chip:active { border-color: var(--gold); }
+
+/* Utility */
+.pb { padding-bottom: 82px; }
+.mt-8 { margin-top: 8px; }
+.mt-12 { margin-top: 12px; }
+.text-small { font-size: 12px; color: var(--slate); }
+.separator { height: 1px; background: var(--cream-dark); margin: 14px 0; }
+
+@keyframes slideUp { from { transform: translateY(60px); opacity: 0 } to { transform: translateY(0); opacity: 1 } }
+@keyframes fadeIn { from { opacity: 0 } to { opacity: 1 } }
+@keyframes spin { from { transform: rotate(0deg) } to { transform: rotate(360deg) } }
+
+/* ── PDF GENERATING OVERLAY ── */
+.pdf-overlay { display: none; position: fixed; inset: 0; background: rgba(26,39,68,0.92); z-index: 500; flex-direction: column; align-items: center; justify-content: center; gap: 20px; }
+.pdf-overlay.open { display: flex; }
+.pdf-spinner { width: 52px; height: 52px; border: 4px solid rgba(201,168,76,0.25); border-top-color: var(--gold); border-radius: 50%; animation: spin 0.8s linear infinite; }
+.pdf-overlay-title { font-family: 'DM Serif Display', serif; font-size: 22px; color: white; }
+.pdf-overlay-sub { font-size: 13px; color: rgba(255,255,255,0.55); text-align: center; max-width: 260px; line-height: 1.5; }
+
+/* ── SHARE ACTION SHEET ── */
+.share-sheet { display: none; position: fixed; inset: 0; z-index: 400; align-items: flex-end; }
+.share-sheet.open { display: flex; }
+.share-backdrop { position: absolute; inset: 0; background: rgba(0,0,0,0.5); }
+.share-panel { position: relative; background: var(--white); border-radius: 22px 22px 0 0; padding: 24px 18px 40px; width: 100%; animation: slideUp .25s ease-out; }
+.share-handle { width: 40px; height: 4px; background: var(--cream-dark); border-radius: 2px; margin: 0 auto 20px; }
+.share-title { font-family: 'DM Serif Display', serif; font-size: 18px; margin-bottom: 6px; }
+.share-sub { font-size: 13px; color: var(--slate); margin-bottom: 20px; }
+.share-actions { display: flex; flex-direction: column; gap: 10px; }
+.share-action { display: flex; align-items: center; gap: 14px; padding: 14px 16px; border: 1.5px solid var(--cream-dark); border-radius: 12px; background: var(--cream); cursor: pointer; transition: all .2s; }
+.share-action:active { border-color: var(--gold); background: white; }
+.share-action-icon { width: 40px; height: 40px; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 20px; flex-shrink: 0; }
+.share-action-text strong { display: block; font-size: 14px; font-weight: 600; color: var(--navy); }
+.share-action-text span { font-size: 12px; color: var(--slate); }
+.share-cancel { width: 100%; margin-top: 10px; padding: 14px; border: none; background: none; font-size: 15px; font-weight: 600; color: var(--slate); cursor: pointer; border-radius: 12px; }
+.share-cancel:active { background: var(--cream-dark); }
+
+/* ── PDF DOCUMENT (hidden, rendered off-screen) ── */
+#pdfDoc {
+  position: fixed; left: -9999px; top: 0;
+  width: 794px; /* A4 at 96dpi */
+  background: white;
+  font-family: Arial, sans-serif;
+  font-size: 13px;
+  color: #1a2744;
+  padding: 0;
+  z-index: -1;
+}
+.pdf-page { width: 794px; min-height: 1123px; padding: 48px 52px; background: white; page-break-after: always; position: relative; }
+.pdf-header { background: #1a2744; margin: -48px -52px 32px; padding: 28px 52px; display: flex; align-items: center; justify-content: space-between; }
+.pdf-logo-area { display: flex; align-items: center; gap: 12px; }
+.pdf-logo-mark { width: 42px; height: 42px; background: #c9a84c; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 20px; font-weight: bold; color: #1a2744; font-family: Georgia, serif; }
+.pdf-logo-name { font-family: Georgia, serif; font-size: 20px; color: white; font-weight: bold; }
+.pdf-logo-sub { font-size: 10px; color: #e4c87a; text-transform: uppercase; letter-spacing: 0.1em; }
+.pdf-quote-meta { text-align: right; }
+.pdf-quote-num { font-size: 18px; font-weight: bold; color: white; font-family: Georgia, serif; }
+.pdf-quote-date { font-size: 11px; color: rgba(255,255,255,0.6); margin-top: 2px; }
+.pdf-section-title { font-family: Georgia, serif; font-size: 14px; color: #1a2744; border-bottom: 2px solid #c9a84c; padding-bottom: 6px; margin: 24px 0 12px; }
+.pdf-grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 16px; }
+.pdf-field-label { font-size: 9px; font-weight: bold; text-transform: uppercase; letter-spacing: 0.08em; color: #4a5568; margin-bottom: 2px; }
+.pdf-field-value { font-size: 13px; font-weight: 600; color: #1a2744; }
+.pdf-items-table { width: 100%; border-collapse: collapse; font-size: 12px; margin-bottom: 16px; }
+.pdf-items-table th { background: #1a2744; color: white; padding: 8px 10px; text-align: left; font-size: 10px; text-transform: uppercase; letter-spacing: 0.06em; }
+.pdf-items-table th:last-child { text-align: right; }
+.pdf-items-table td { padding: 8px 10px; border-bottom: 1px solid #ede8dc; vertical-align: middle; }
+.pdf-items-table td:last-child { text-align: right; font-weight: 600; }
+.pdf-items-table tr:nth-child(even) td { background: #f8f4ec; }
+.pdf-colour-dot { width: 12px; height: 12px; border-radius: 3px; display: inline-block; margin-right: 5px; vertical-align: middle; border: 1px solid rgba(0,0,0,0.1); }
+.pdf-totals { margin-left: auto; width: 280px; }
+.pdf-total-row { display: flex; justify-content: space-between; padding: 6px 0; border-bottom: 1px solid #ede8dc; font-size: 13px; }
+.pdf-total-row:last-child { border-bottom: none; border-top: 2px solid #1a2744; padding-top: 10px; margin-top: 4px; }
+.pdf-total-row:last-child span { font-family: Georgia, serif; font-size: 16px; font-weight: bold; color: #1a2744; }
+.pdf-offer-banner { background: #1a2744; border-radius: 10px; padding: 14px 18px; margin-bottom: 16px; display: flex; align-items: center; justify-content: space-between; }
+.pdf-offer-left { color: white; }
+.pdf-offer-title { font-family: Georgia, serif; font-size: 15px; color: white; }
+.pdf-offer-sub { font-size: 11px; color: rgba(255,255,255,0.6); margin-top: 2px; }
+.pdf-offer-pct { font-family: Georgia, serif; font-size: 40px; color: #e4c87a; line-height: 1; }
+.pdf-included { display: flex; gap: 8px; margin-bottom: 16px; }
+.pdf-included-item { flex: 1; background: #f0faf5; border: 1px solid rgba(45,106,79,0.2); border-radius: 8px; padding: 10px 12px; text-align: center; }
+.pdf-included-item .label { font-size: 10px; font-weight: bold; color: #2d6a4f; text-transform: uppercase; }
+.pdf-included-item .val { font-size: 13px; font-weight: 600; color: #1a2744; margin-top: 2px; }
+.pdf-payment-box { background: #f8f4ec; border: 1px solid #ede8dc; border-radius: 8px; padding: 12px 16px; }
+.pdf-footer { position: absolute; bottom: 28px; left: 52px; right: 52px; display: flex; justify-content: space-between; align-items: center; border-top: 1px solid #ede8dc; padding-top: 12px; font-size: 10px; color: #4a5568; }
+.pdf-photo-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 16px; }
+.pdf-photo-item { border-radius: 8px; overflow: hidden; }
+.pdf-photo-item img { width: 100%; aspect-ratio: 4/3; object-fit: cover; display: block; }
+.pdf-photo-label { background: #1a2744; color: white; font-size: 9px; padding: 3px 6px; text-align: center; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; }
+.pdf-saving-highlight { background: rgba(45,106,79,0.1); border: 1px solid rgba(45,106,79,0.25); border-radius: 6px; padding: 8px 12px; display: flex; justify-content: space-between; margin-top: 8px; }
+.pdf-saving-highlight span { font-size: 12px; color: #2d6a4f; font-weight: 600; }
+</style>
+</head>
+<body>
+
+<!-- ── HEADER ── -->
+<div class="app-header">
+  <div class="header-inner">
+    <div class="logo-area">
+      <div class="logo-mark">R</div>
+      <div class="logo-text">
+        <h1>Roofline Pro</h1>
+        <p>Pricing Tool V3</p>
+      </div>
+    </div>
+    <div class="quote-ref">
+      <strong id="quoteRef">New Quote</strong>
+      <span id="quoteDate"></span>
+    </div>
+  </div>
+  <nav class="nav-tabs">
+    <button class="nav-tab active"  onclick="showSection('customer')">👤 Customer</button>
+    <button class="nav-tab"         onclick="showSection('products')">🏠 Products</button>
+    <button class="nav-tab"         onclick="showSection('pricing')">💷 Pricing</button>
+    <button class="nav-tab"         onclick="showSection('photos')">📸 Photos</button>
+    <button class="nav-tab"         onclick="showSection('summary')">📋 Summary</button>
+  </nav>
+</div>
+
+<!-- ══════════ CUSTOMER ══════════ -->
+<div id="section-customer" class="section active pb">
+  <div class="card">
+    <div class="card-title"><div class="icon">📋</div> Enquiry Details</div>
+    <div class="field">
+      <label>Enquiry Type</label>
+      <div class="enquiry-btns">
+        <div class="enquiry-btn active" onclick="setEnquiry(this,'Domestic')"><span>🏡</span><p>Domestic</p><small>Residential</small></div>
+        <div class="enquiry-btn" onclick="setEnquiry(this,'Commercial')"><span>🏢</span><p>Commercial</p><small>Business</small></div>
+      </div>
+    </div>
+    <div class="field-row mt-8">
+      <div class="field"><label>Quotation No.</label><input type="text" id="quoteNumber" placeholder="Auto-generated" oninput="updateRef()"></div>
+      <div class="field"><label>Valid Until</label><input type="date" id="validUntil"></div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-title"><div class="icon">🏠</div> Customer Details</div>
+    <div class="field-row">
+      <div class="field"><label>First Name</label><input type="text" id="firstName" placeholder="John" oninput="updateRef()"></div>
+      <div class="field"><label>Last Name</label><input type="text" id="lastName" placeholder="Smith" oninput="updateRef()"></div>
+    </div>
+    <div class="field"><label>Address</label><input type="text" id="address" placeholder="12 High Street"></div>
+    <div class="field-row">
+      <div class="field"><label>Town / City</label><input type="text" id="town" placeholder="Belfast"></div>
+      <div class="field"><label>Postcode</label><input type="text" id="postcode" placeholder="BT1 1AA"></div>
+    </div>
+    <div class="field-row">
+      <div class="field"><label>Mobile</label><input type="tel" id="mobile" placeholder="07700 900000"></div>
+      <div class="field"><label>Home Tel</label><input type="tel" id="homeTel" placeholder="028 9000 0000"></div>
+    </div>
+    <div class="field"><label>Email</label><input type="email" id="email" placeholder="john@example.com"></div>
+    <div class="field"><label>Installation Address <span class="text-small">(if different)</span></label><input type="text" id="installAddr" placeholder="Leave blank if same as above"></div>
+  </div>
+
+  <div class="card">
+    <div class="card-title"><div class="icon">🙋</div> Consultant Details</div>
+    <div class="field"><label>Consultant Name</label><input type="text" id="consultant" placeholder="Your name"></div>
+    <div class="field-row">
+      <div class="field"><label>Email</label><input type="email" id="consEmail" placeholder="you@company.com"></div>
+      <div class="field"><label>Mobile</label><input type="tel" id="consMobile" placeholder="07700 000000"></div>
+    </div>
+    <div class="field">
+      <label>Notes</label>
+      <div class="note-chips">
+        <div class="note-chip" onclick="addNote('Windows noted')">🪟 Windows</div>
+        <div class="note-chip" onclick="addNote('Conservatory present')">🏠 Conservatory</div>
+        <div class="note-chip" onclick="addNote('Scaffold required')">🔧 Scaffold</div>
+        <div class="note-chip" onclick="addNote('Clear to fit – confirmed')">✅ Clear to fit</div>
+      </div>
+      <textarea id="notes" placeholder="Additional notes, access instructions..."></textarea>
+    </div>
+  </div>
+  <button class="btn-primary" onclick="showSection('products')">Next: Add Products →</button>
+</div>
+
+<!-- ══════════ PRODUCTS ══════════ -->
+<div id="section-products" class="section pb">
+
+  <div class="card">
+    <div class="card-title"><div class="icon">🏠</div> Roofline Items</div>
+    <div id="lineItems" class="line-items"></div>
+    <button class="add-product-btn" onclick="openProductModal()"><span style="font-size:20px">＋</span> Add Product / Service</button>
+  </div>
+
+  <div class="card">
+    <div class="card-title"><div class="icon">🔧</div> Fitting Option</div>
+    <div class="fitting-options">
+      <div class="fitting-opt active" id="fitIncluded" onclick="setFitting('included')">
+        <span class="fit-icon">🔨</span>
+        <span class="fit-label">Fitting Included</span>
+        <span class="fit-sub">Full supply & fit</span>
+      </div>
+      <div class="fitting-opt" id="fitSupply" onclick="setFitting('supply')">
+        <span class="fit-icon">📦</span>
+        <span class="fit-label">Supply Only</span>
+        <span class="fit-sub">Materials only</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-title"><div class="icon">✅</div> Always Included</div>
+    <p class="text-small" style="margin-bottom:12px">The following are included as standard in every quote.</p>
+    <div class="included-services">
+      <div class="included-service">
+        <span class="svc-icon">📐</span>
+        <div class="svc-info"><div class="svc-name">Survey</div><div class="svc-price">£30.00</div></div>
+        <span class="svc-badge">Included</span>
+      </div>
+      <div class="included-service">
+        <span class="svc-icon">🛡️</span>
+        <div class="svc-info"><div class="svc-name">IWA</div><div class="svc-price">£30.00</div></div>
+        <span class="svc-badge">Included</span>
+      </div>
+      <div class="included-service">
+        <span class="svc-icon">🗑️</span>
+        <div class="svc-info"><div class="svc-name">Disposal</div><div class="svc-price">£20.00</div></div>
+        <span class="svc-badge">Included</span>
+      </div>
+    </div>
+  </div>
+
+  <button class="btn-primary" onclick="showSection('pricing')">Next: Pricing →</button>
+</div>
+
+<!-- ══════════ PRICING ══════════ -->
+<div id="section-pricing" class="section pb">
+
+  <!-- Special Offer Block -->
+  <div class="special-offer-card">
+    <div class="offer-header">
+      <div class="offer-badge">🏷️</div>
+      <div>
+        <div class="offer-title">Special Offer Applied</div>
+        <div class="offer-sub">Half-price materials discount active</div>
+      </div>
+    </div>
+    <div class="discount-hero">
+      <div class="discount-hero-pct">50%</div>
+      <div class="discount-hero-label">Discount on All Materials</div>
+    </div>
+    <div class="offer-savings">
+      <div class="offer-savings-label">You save on this quote</div>
+      <div class="offer-savings-amount" id="savingsAmount">£0.00</div>
+    </div>
+    <div class="offer-valid" id="offerValidText">Valid until —</div>
+  </div>
+
+  <!-- Override -->
+  <div class="card">
+    <div class="card-title"><div class="icon">✏️</div> Override Price</div>
+    <div class="field override-field">
+      <label>Manual Price (leave blank to use calculated total)</label>
+      <input type="number" id="overridePrice" placeholder="£ Enter override..." oninput="calcTotal()">
+    </div>
+  </div>
+
+  <!-- Summary -->
+  <div class="card">
+    <div class="card-title"><div class="icon">📊</div> Price Breakdown</div>
+    <table class="price-table" id="priceTable"></table>
+    <p class="vat-note">All prices include VAT at 20%</p>
+  </div>
+
+  <!-- Payment -->
+  <div class="card">
+    <div class="card-title"><div class="icon">💳</div> Payment Method</div>
+    <div class="payment-method">
+      <div class="pay-option selected" onclick="selectPayment(this,'Bank Draft')"><input type="radio" name="pm" checked><label>Bank Draft</label></div>
+      <div class="pay-option" onclick="selectPayment(this,'Visa / Debit')"><input type="radio" name="pm"><label>Visa / Debit Card</label></div>
+      <div class="pay-option" onclick="selectPayment(this,'Cheque')"><input type="radio" name="pm"><label>Cheque</label></div>
+      <div class="pay-option" onclick="selectPayment(this,'Cash')"><input type="radio" name="pm"><label>Cash</label></div>
+      <div class="pay-option" onclick="selectPayment(this,'Finance')"><input type="radio" name="pm"><label>Finance</label></div>
+    </div>
+    <div class="finance-schedule mt-12" id="financeSchedule" style="display:none">
+      <div class="sched-row"><span>Deposit (10%)</span><strong id="schedDeposit">—</strong></div>
+      <div class="sched-row"><span>On Completion to Fitters</span><strong>Included</strong></div>
+      <div class="sched-row"><span>On Completion to THI (90%)</span><strong id="schedCompletion">—</strong></div>
+    </div>
+  </div>
+
+  <button class="btn-primary" onclick="showSection('photos')">Next: Add Photos →</button>
+</div>
+
+<!-- ══════════ PHOTOS ══════════ -->
+<div id="section-photos" class="section pb">
+  <div class="card">
+    <div class="card-title"><div class="icon">📸</div> Site Photos</div>
+    <p class="text-small" style="margin-bottom:14px">Take or upload a photo, then select what it shows. Photos are grouped by category.</p>
+
+    <div class="photo-add-row">
+      <button class="photo-source-btn" onclick="triggerCamera()"><span>📷</span>Take Photo</button>
+      <button class="photo-source-btn" onclick="triggerGallery()"><span>🖼️</span>From Gallery</button>
+    </div>
+
+    <input type="file" id="cameraInput"  class="hidden-input" accept="image/*" capture="environment" onchange="handlePhoto(event)">
+    <input type="file" id="galleryInput" class="hidden-input" accept="image/*" multiple onchange="handlePhoto(event)">
+  </div>
+
+  <!-- Category picker (shown after image is selected) -->
+  <div class="photo-cat-picker" id="catPicker">
+    <img id="catPreviewImg" class="photo-cat-preview" src="" alt="Preview">
+    <div class="photo-cat-title">What does this photo show?</div>
+    <div class="photo-cat-grid">
+      <div class="photo-cat-btn" onclick="assignCategory('Front')"><span>🏠</span><p>Front</p></div>
+      <div class="photo-cat-btn" onclick="assignCategory('Rear')"><span>🔙</span><p>Rear</p></div>
+      <div class="photo-cat-btn" onclick="assignCategory('Side')"><span>↔️</span><p>Side</p></div>
+      <div class="photo-cat-btn" onclick="assignCategory('Damage')"><span>⚠️</span><p>Damage</p></div>
+      <div class="photo-cat-btn" onclick="assignCategory('Obstacles')"><span>🚧</span><p>Obstacles</p></div>
+      <div class="photo-cat-btn" onclick="assignCategory('General')"><span>📍</span><p>General</p></div>
+    </div>
+    <button class="photo-cat-cancel" onclick="cancelPhoto()">✕ Cancel</button>
+  </div>
+
+  <!-- Grouped photo display -->
+  <div id="photoDisplay"></div>
+</div>
+
+<!-- ══════════ SUMMARY ══════════ -->
+<div id="section-summary" class="section pb">
+  <div id="summaryContent"></div>
+
+  <!-- Main action: Generate & Send PDF -->
+  <button class="btn-gold" onclick="openShareSheet()" style="margin-bottom:10px">
+    📄 Generate PDF & Send
+  </button>
+  <div class="btn-row">
+    <button class="btn-primary" onclick="printQuote()">🖨️ Print</button>
+    <button class="btn-outline" onclick="newQuote()">＋ New Quote</button>
+  </div>
+</div>
+
+<!-- ── BOTTOM BAR ── -->
+<div class="summary-bar">
+  <div>
+    <div class="total-label">Quote Total (inc. VAT)</div>
+    <div class="total-amount" id="barTotal">£0.00</div>
+  </div>
+  <button class="view-btn" onclick="showSection('summary')">View →</button>
+</div>
+
+<!-- ── PRODUCT MODAL ── -->
+<div class="modal-overlay" id="productModal" onclick="closeModalOverlay(event)">
+  <div class="modal-sheet">
+    <div class="modal-handle"></div>
+    <div class="modal-title">Add Product</div>
+    <div id="productList"></div>
+  </div>
+</div>
+
+<!-- ── PDF GENERATING OVERLAY ── -->
+<div class="pdf-overlay" id="pdfOverlay">
+  <div class="pdf-spinner"></div>
+  <div class="pdf-overlay-title">Generating Quote PDF…</div>
+  <div class="pdf-overlay-sub" id="pdfOverlaySub">Building your document, please wait</div>
+</div>
+
+<!-- ── SHARE ACTION SHEET ── -->
+<div class="share-sheet" id="shareSheet">
+  <div class="share-backdrop" onclick="closeShareSheet()"></div>
+  <div class="share-panel">
+    <div class="share-handle"></div>
+    <div class="share-title">Send Quote</div>
+    <div class="share-sub" id="shareSheetSub">Choose how to send this quote</div>
+    <div class="share-actions">
+      <div class="share-action" onclick="generateAndShare('email')">
+        <div class="share-action-icon" style="background:#e8f0fe">📧</div>
+        <div class="share-action-text">
+          <strong>Email PDF</strong>
+          <span>Opens your email app with PDF attached</span>
+        </div>
+      </div>
+      <div class="share-action" onclick="generateAndShare('whatsapp')">
+        <div class="share-action-icon" style="background:#e8fde8">💬</div>
+        <div class="share-action-text">
+          <strong>Share via WhatsApp / Messages</strong>
+          <span>Share the PDF file via any app</span>
+        </div>
+      </div>
+      <div class="share-action" onclick="generateAndShare('download')">
+        <div class="share-action-icon" style="background:#fff3e0">💾</div>
+        <div class="share-action-text">
+          <strong>Download PDF</strong>
+          <span>Save to your device</span>
+        </div>
+      </div>
+    </div>
+    <button class="share-cancel" onclick="closeShareSheet()">Cancel</button>
+  </div>
+</div>
+
+<!-- ── HIDDEN PDF DOCUMENT ── -->
+<div id="pdfDoc"></div>
+
+<script>
+// ════════════════════════════════════
+// DATA
+// ════════════════════════════════════
+const COLOURS = [
+  { name:'Smooth White',      type:'gloss', hex:'#f0ece4', short:'White'     },
+  { name:'Smooth Brown',      type:'gloss', hex:'#6b4c35', short:'Brown'     },
+  { name:'Smooth Black',      type:'gloss', hex:'#1c1c1c', short:'Black'     },
+  { name:'Anthracite Gloss',  type:'gloss', hex:'#4a4f54', short:'Anth.Gls'  },
+  { name:'Anthracite Foil',   type:'foil',  hex:'#6b7280', short:'Anth.Foil' },
+  { name:'Cream Foil',        type:'foil',  hex:'#f0d98c', short:'Cream'     },
+  { name:'Rosewood Foil',     type:'foil',  hex:'#7a3b3b', short:'Rosewood'  },
+  { name:'Golden Oak Foil',   type:'foil',  hex:'#b5711d', short:'Gold Oak'  },
+  { name:'Black Ash Foil',    type:'foil',  hex:'#3a3a3a', short:'Black Ash' },
+  { name:'Mahogany Foil',     type:'foil',  hex:'#5c2b1e', short:'Mahogany'  },
+];
+
+const PRODUCTS = {
+  'Fascia': [
+    { name:'Fascia 150–225mm', unit:'lin m', priceGloss:23.88, priceFoil:34.08 },
+    { name:'Fascia 226–300mm', unit:'lin m', priceGloss:30.42, priceFoil:44.01 },
+    { name:'Fascia 301–380mm', unit:'lin m', priceGloss:40.64, priceFoil:58.13 },
+  ],
+  'Soffit': [
+    { name:'Soffit',               unit:'lin m', priceGloss:9.83,  priceFoil:29.97 },
+    { name:'Extra Soffit >300mm',  unit:'sq m',  priceGloss:15.46, priceFoil:56.13 },
+  ],
+  'External Sills': [
+    { name:'Cap Over External Cills', unit:'lin m', priceGloss:35.82, priceFoil:61.34 },
+    { name:'Cap Over Cill',           unit:'each',  priceGloss:30.00, priceFoil:30.00 },
+  ],
+  'Guttering': [
+    { name:'Gutter – Square',  unit:'lin m', priceGloss:20.03, priceFoil:20.75 },
+    { name:'Gutter – Ogee',    unit:'lin m', priceGloss:18.61, priceFoil:18.61 },
+    { name:'Gutter – Refit',   unit:'lin m', priceGloss:9.08,  priceFoil:9.08  },
+    { name:'5m Downpipe',      unit:'lin m', priceGloss:59.02, priceFoil:63.43 },
+    { name:'2.5m Downpipe',    unit:'lin m', priceGloss:38.87, priceFoil:38.87 },
+    { name:'Hopper Box',       unit:'each',  priceGloss:32.67, priceFoil:39.20 },
+  ],
+  'Cladding': [
+    { name:'Cladding Soffit Square <2.5m²',   unit:'sq m', priceGloss:49.80, priceFoil:86.88 },
+    { name:'Cladding Soffit Triangle <2.5m²', unit:'sq m', priceGloss:49.80, priceFoil:86.88 },
+    { name:'Cladding Shiplap Square >2.5m²',  unit:'sq m', priceGloss:49.80, priceFoil:86.88 },
+    { name:'Cladding Shiplap Triangle >2.5m²',unit:'sq m', priceGloss:49.80, priceFoil:86.88 },
+  ],
+  'Accessories': [
+    { name:'Vents',              unit:'lin m', priceGloss:2.72,  priceFoil:3.27  },
+    { name:'Tudor Strips',       unit:'lin m', priceGloss:49.80, priceFoil:86.88 },
+    { name:'D-Mould',            unit:'lin m', priceGloss:7.56,  priceFoil:9.08  },
+    { name:'Dry Verge',          unit:'lin m', priceGloss:30.42, priceFoil:30.42 },
+    { name:'Bird Guard',         unit:'each',  priceGloss:2.00,  priceFoil:2.00  },
+    { name:'Replacement Timber', unit:'lin m', priceGloss:12.21, priceFoil:12.21 },
+    { name:'Eaves Protection',   unit:'lin m', priceGloss:5.00,  priceFoil:5.00  },
+  ],
+  'Labour / Extras': [
+    { name:'uPVC Fascia Removal', unit:'lin m', priceGloss:2.00,  priceFoil:2.00  },
+    { name:'uPVC Soffit Removal', unit:'lin m', priceGloss:2.00,  priceFoil:2.00  },
+    { name:'Scaffold Erection',   unit:'each',  priceGloss:30.00, priceFoil:30.00 },
+    { name:'Canopy up to 1.5m',   unit:'lin m', priceGloss:75.00, priceFoil:75.00 },
+    { name:'Min. Fitting Charge', unit:'each',  priceGloss:85.00, priceFoil:85.00 },
+  ],
+};
+
+const PHOTO_CATS = {
+  'Front':     { icon:'🏠', colour:'#1a2744' },
+  'Rear':      { icon:'🔙', colour:'#2d6a4f' },
+  'Side':      { icon:'↔️', colour:'#6b4c35' },
+  'Damage':    { icon:'⚠️', colour:'#c0392b' },
+  'Obstacles': { icon:'🚧', colour:'#e07b2a' },
+  'General':   { icon:'📍', colour:'#4a5568' },
+};
+
+// ════════════════════════════════════
+// STATE
+// ════════════════════════════════════
+let state = {
+  enquiry: 'Domestic',
+  lineItems: [],          // each has colourIdx
+  photos: [],             // { src, category }
+  fitting: 'included',
+  paymentMethod: 'Bank Draft',
+  pendingPhotoSrc: null,
+};
+
+const DISCOUNT = 50;
+const SURVEY_COST = 30;
+const IWA_COST = 30;
+const DISPOSAL_COST = 20;
+const FIXED_COSTS = SURVEY_COST + IWA_COST + DISPOSAL_COST;
+
+// ════════════════════════════════════
+// INIT
+// ════════════════════════════════════
+window.onload = () => {
+  const today = new Date();
+  document.getElementById('quoteDate').textContent = today.toLocaleDateString('en-GB');
+  const vd = new Date(today); vd.setDate(vd.getDate() + 15);
+  document.getElementById('validUntil').value = vd.toISOString().split('T')[0];
+  const ref = 'QT-' + today.getFullYear().toString().slice(2) + String(today.getMonth()+1).padStart(2,'0') + '-' + Math.floor(Math.random()*9000+1000);
+  document.getElementById('quoteNumber').value = ref;
+  updateRef();
+  renderLineItems();
+  calcTotal();
+  updateOfferValid();
+};
+
+function updateOfferValid() {
+  const vd = document.getElementById('validUntil').value;
+  if(vd) {
+    const d = new Date(vd).toLocaleDateString('en-GB',{day:'numeric',month:'long',year:'numeric'});
+    document.getElementById('offerValidText').textContent = 'Offer valid until ' + d;
+  }
+}
+
+// ════════════════════════════════════
+// NAV
+// ════════════════════════════════════
+function showSection(id) {
+  document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+  document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
+  document.getElementById('section-' + id).classList.add('active');
+  const tabs = document.querySelectorAll('.nav-tab');
+  const idx = ['customer','products','pricing','photos','summary'];
+  if(tabs[idx.indexOf(id)]) tabs[idx.indexOf(id)].classList.add('active');
+  if(id === 'summary') renderSummary();
+  window.scrollTo(0, 0);
+}
+
+// ════════════════════════════════════
+// CUSTOMER
+// ════════════════════════════════════
+function setEnquiry(el, type) {
+  document.querySelectorAll('.enquiry-btn').forEach(b => b.classList.remove('active'));
+  el.classList.add('active'); state.enquiry = type;
+}
+function updateRef() {
+  const fn = document.getElementById('firstName').value;
+  const ln = document.getElementById('lastName').value;
+  const q  = document.getElementById('quoteNumber').value;
+  document.getElementById('quoteRef').textContent = (fn||ln) ? (fn+' '+ln).trim() + (q?'·'+q:'') : (q||'New Quote');
+  updateOfferValid();
+}
+function addNote(t) {
+  const ta = document.getElementById('notes');
+  ta.value = (ta.value ? ta.value + '\n' : '') + t;
+}
+
+// ════════════════════════════════════
+// FITTING
+// ════════════════════════════════════
+function setFitting(mode) {
+  state.fitting = mode;
+  document.getElementById('fitIncluded').classList.toggle('active', mode === 'included');
+  document.getElementById('fitSupply').classList.toggle('active', mode === 'supply');
+  calcTotal();
+}
+
+// ════════════════════════════════════
+// PRODUCTS — per-item colour
+// ════════════════════════════════════
+function openProductModal() {
+  let html = '';
+  for(const [cat, items] of Object.entries(PRODUCTS)) {
+    html += `<div class="product-category">${cat}</div>`;
+    items.forEach((p, i) => {
+      const defPrice = p.priceGloss;
+      html += `
+        <div class="product-option" onclick="addProduct('${cat}',${i})">
+          <div><h4>${p.name}</h4><p>from £${defPrice.toFixed(2)} per ${p.unit}</p></div>
+          <div class="add-icon">＋</div>
+        </div>`;
+    });
+  }
+  document.getElementById('productList').innerHTML = html;
+  document.getElementById('productModal').classList.add('open');
+}
+
+function addProduct(cat, idx) {
+  const p = PRODUCTS[cat][idx];
+  state.lineItems.push({ ...p, qty: 1, category: cat, colourIdx: 0 });
+  document.getElementById('productModal').classList.remove('open');
+  renderLineItems();
+  calcTotal();
+}
+
+function buildColourSwatches(itemIdx, selectedColourIdx) {
+  return COLOURS.map((c, ci) => `
+    <div class="item-swatch ${ci === selectedColourIdx ? 'selected' : ''}"
+         style="background:${c.hex}"
+         title="${c.name}"
+         onclick="setItemColour(${itemIdx},${ci})">
+    </div>
+  `).join('');
+}
+
+function setItemColour(itemIdx, colourIdx) {
+  state.lineItems[itemIdx].colourIdx = colourIdx;
+  renderLineItems();
+  calcTotal();
+}
+
+function renderLineItems() {
+  const container = document.getElementById('lineItems');
+  if(state.lineItems.length === 0) {
+    container.innerHTML = '<p class="text-small" style="text-align:center;padding:20px 0;color:var(--slate)">No items yet. Tap below to add products.</p>';
+    return;
+  }
+  container.innerHTML = state.lineItems.map((item, i) => {
+    const col = COLOURS[item.colourIdx];
+    const price = col.type === 'foil' && item.priceFoil ? item.priceFoil : item.priceGloss;
+    const total = (price * item.qty).toFixed(2);
+    return `
+      <div class="line-item">
+        <div class="line-item-header">
+          <div class="line-item-name">${item.name}</div>
+          <button class="line-item-remove" onclick="removeItem(${i})">×</button>
+        </div>
+        <div class="item-colour-row">
+          <div class="item-colour-label">Colour</div>
+          <div class="item-colour-swatches">${buildColourSwatches(i, item.colourIdx)}</div>
+          <div class="selected-colour-pill">
+            <div class="selected-colour-dot" style="background:${col.hex}"></div>
+            ${col.name} · ${col.type === 'foil' ? 'Foil' : 'Gloss'}
+          </div>
+        </div>
+        <div class="line-item-controls">
+          <div>
+            <div style="font-size:10px;font-weight:700;color:var(--slate);text-transform:uppercase;margin-bottom:4px">Qty (${item.unit})</div>
+            <div class="qty-control">
+              <button class="qty-btn" onclick="changeQty(${i},-1)">−</button>
+              <input class="qty-input" type="number" value="${item.qty}" min="0.1" step="0.1" onchange="setQty(${i},this.value)">
+              <button class="qty-btn" onclick="changeQty(${i},1)">＋</button>
+            </div>
+          </div>
+          <div>
+            <div style="font-size:10px;font-weight:700;color:var(--slate);text-transform:uppercase;margin-bottom:4px">Unit Price</div>
+            <div class="price-display">£${price.toFixed(2)}</div>
+          </div>
+        </div>
+        <div class="line-item-total">Line Total: £${total}</div>
+      </div>`;
+  }).join('');
+}
+
+function removeItem(i) { state.lineItems.splice(i,1); renderLineItems(); calcTotal(); }
+function changeQty(i, d) { state.lineItems[i].qty = Math.max(0.1, +(state.lineItems[i].qty+d).toFixed(1)); renderLineItems(); calcTotal(); }
+function setQty(i, v) { state.lineItems[i].qty = Math.max(0.1, parseFloat(v)||0.1); renderLineItems(); calcTotal(); }
+
+// ════════════════════════════════════
+// PRICING
+// ════════════════════════════════════
+function calcTotal() {
+  let materialCost = 0;
+  state.lineItems.forEach(item => {
+    const col = COLOURS[item.colourIdx];
+    const price = col.type === 'foil' && item.priceFoil ? item.priceFoil : item.priceGloss;
+    materialCost += price * item.qty;
+  });
+
+  const discountAmt = materialCost * (DISCOUNT / 100);
+  const discMaterial = materialCost - discountAmt;
+  const subtotal = discMaterial + FIXED_COSTS;
+  const vat = subtotal * 0.2;
+  const calcTotal = subtotal + vat;
+
+  const override = parseFloat(document.getElementById('overridePrice')?.value) || null;
+  const finalTotal = override || calcTotal;
+
+  // Savings display
+  const savEl = document.getElementById('savingsAmount');
+  if(savEl) savEl.textContent = '£' + discountAmt.toFixed(2);
+
+  // Bar
+  document.getElementById('barTotal').textContent = '£' + finalTotal.toFixed(2);
+
+  // Table
+  const tbl = document.getElementById('priceTable');
+  if(tbl) {
+    tbl.innerHTML = `
+      <tr><td>Materials (list price)</td><td>£${materialCost.toFixed(2)}</td></tr>
+      <tr><td style="color:var(--green)">Special Offer Discount (50%)</td><td style="color:var(--green)">−£${discountAmt.toFixed(2)}</td></tr>
+      <tr><td>Survey</td><td>£${SURVEY_COST.toFixed(2)}</td></tr>
+      <tr><td>IWA</td><td>£${IWA_COST.toFixed(2)}</td></tr>
+      <tr><td>Disposal</td><td>£${DISPOSAL_COST.toFixed(2)}</td></tr>
+      <tr><td>Sub-total (ex. VAT)</td><td>£${subtotal.toFixed(2)}</td></tr>
+      <tr><td>VAT (20%)</td><td>£${vat.toFixed(2)}</td></tr>
+      ${override ? `<tr><td style="color:var(--gold)">Override Applied</td><td style="color:var(--gold)">£${override.toFixed(2)}</td></tr>` : ''}
+      <tr class="total-row"><td>Total Payable</td><td>£${finalTotal.toFixed(2)}</td></tr>`;
+  }
+
+  // Finance schedule
+  const dep = document.getElementById('schedDeposit');
+  const comp = document.getElementById('schedCompletion');
+  if(dep) dep.textContent = '£' + (finalTotal * 0.10).toFixed(2);
+  if(comp) comp.textContent = '£' + (finalTotal * 0.90).toFixed(2);
+
+  return finalTotal;
+}
+
+function selectPayment(el, method) {
+  state.paymentMethod = method;
+  document.querySelectorAll('.pay-option').forEach(o => { o.classList.remove('selected'); o.querySelector('input').checked = false; });
+  el.classList.add('selected'); el.querySelector('input').checked = true;
+  document.getElementById('financeSchedule').style.display = method === 'Finance' ? 'block' : 'none';
+}
+
+// ════════════════════════════════════
+// PHOTOS
+// ════════════════════════════════════
+function triggerCamera()  { document.getElementById('cameraInput').click(); }
+function triggerGallery() { document.getElementById('galleryInput').click(); }
+
+function handlePhoto(event) {
+  const files = Array.from(event.target.files);
+  if(!files.length) return;
+  // Handle first file; for multiple files, queue them
+  const file = files[0];
+  const reader = new FileReader();
+  reader.onload = (e) => {
+    state.pendingPhotoSrc = e.target.result;
+    // If multiple files, store queue
+    if(files.length > 1) {
+      state.pendingPhotoQueue = files.slice(1);
+    } else {
+      state.pendingPhotoQueue = [];
+    }
+    openCatPicker(e.target.result);
+  };
+  reader.readAsDataURL(file);
+  event.target.value = '';
+}
+
+function openCatPicker(src) {
+  document.getElementById('catPreviewImg').src = src;
+  document.getElementById('catPicker').classList.add('open');
+  document.getElementById('catPicker').scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+function assignCategory(cat) {
+  if(!state.pendingPhotoSrc) return;
+  state.photos.push({ src: state.pendingPhotoSrc, category: cat });
+  state.pendingPhotoSrc = null;
+  document.getElementById('catPicker').classList.remove('open');
+
+  // If more files queued, process next
+  if(state.pendingPhotoQueue && state.pendingPhotoQueue.length > 0) {
+    const nextFile = state.pendingPhotoQueue.shift();
+    const reader = new FileReader();
+    reader.onload = (e) => { state.pendingPhotoSrc = e.target.result; openCatPicker(e.target.result); };
+    reader.readAsDataURL(nextFile);
+  }
+
+  renderPhotoDisplay();
+}
+
+function cancelPhoto() {
+  state.pendingPhotoSrc = null;
+  state.pendingPhotoQueue = [];
+  document.getElementById('catPicker').classList.remove('open');
+}
+
+function renderPhotoDisplay() {
+  const container = document.getElementById('photoDisplay');
+  if(state.photos.length === 0) {
+    container.innerHTML = '<div class="photo-empty">📷 No photos added yet</div>';
+    return;
+  }
+
+  // Group by category
+  const groups = {};
+  state.photos.forEach((p, i) => {
+    if(!groups[p.category]) groups[p.category] = [];
+    groups[p.category].push({ ...p, idx: i });
+  });
+
+  let html = '';
+  for(const [cat, photos] of Object.entries(groups)) {
+    const info = PHOTO_CATS[cat] || { icon: '📷', colour: '#4a5568' };
+    html += `
+      <div class="card" style="padding:14px">
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px">
+          <div style="width:28px;height:28px;border-radius:8px;background:${info.colour};display:flex;align-items:center;justify-content:center;font-size:14px">${info.icon}</div>
+          <div style="font-weight:700;font-size:14px">${cat}</div>
+          <div style="margin-left:auto;font-size:11px;color:var(--slate)">${photos.length} photo${photos.length>1?'s':''}</div>
+        </div>
+        <div class="photo-grid">
+          ${photos.map(p => `
+            <div class="photo-thumb">
+              <img src="${p.src}" alt="${p.category}">
+              <button class="remove-photo" onclick="removePhoto(${p.idx})">×</button>
+              <div class="photo-label">${info.icon} ${p.category}</div>
+            </div>
+          `).join('')}
+        </div>
+      </div>`;
+  }
+  container.innerHTML = html;
+}
+
+function removePhoto(i) { state.photos.splice(i,1); renderPhotoDisplay(); }
+
+// ════════════════════════════════════
+// SUMMARY
+// ════════════════════════════════════
+function renderSummary() {
+  const fn  = document.getElementById('firstName').value || '';
+  const ln  = document.getElementById('lastName').value  || '';
+  const addr= document.getElementById('address').value   || '';
+  const town= document.getElementById('town').value      || '';
+  const pc  = document.getElementById('postcode').value  || '';
+  const qn  = document.getElementById('quoteNumber').value || '';
+  const con = document.getElementById('consultant').value || '';
+  const vd  = document.getElementById('validUntil').value || '';
+  const vdFmt = vd ? new Date(vd).toLocaleDateString('en-GB') : '—';
+  const total = calcTotal();
+
+  // Items table
+  let itemsHtml = '';
+  state.lineItems.forEach(item => {
+    const col = COLOURS[item.colourIdx];
+    const price = col.type === 'foil' && item.priceFoil ? item.priceFoil : item.priceGloss;
+    itemsHtml += `
+      <tr style="border-bottom:1px solid var(--cream-dark)">
+        <td style="padding:8px 0;font-size:13px">
+          ${item.name}
+          <div style="display:inline-flex;align-items:center;gap:4px;margin-left:5px">
+            <div style="width:10px;height:10px;border-radius:2px;background:${col.hex};border:1px solid rgba(0,0,0,0.1)"></div>
+            <span style="font-size:10px;color:var(--slate)">${col.short}</span>
+          </div>
+        </td>
+        <td style="padding:8px 0;font-size:13px;text-align:center;color:var(--slate)">${item.qty} ${item.unit}</td>
+        <td style="padding:8px 0;font-size:13px;text-align:right;font-weight:600">£${(price*item.qty).toFixed(2)}</td>
+      </tr>`;
+  });
+
+  // Photos summary
+  let photosHtml = '';
+  if(state.photos.length > 0) {
+    const grouped = {};
+    state.photos.forEach(p => { if(!grouped[p.category]) grouped[p.category]=[]; grouped[p.category].push(p); });
+    photosHtml = `
+      <div class="card">
+        <div class="card-title"><div class="icon">📸</div> Site Photos (${state.photos.length})</div>
+        ${Object.entries(grouped).map(([cat, photos]) => `
+          <div style="margin-bottom:10px">
+            <div style="font-size:10px;font-weight:700;text-transform:uppercase;color:var(--gold);margin-bottom:5px">${PHOTO_CATS[cat]?.icon||'📷'} ${cat}</div>
+            <div class="photo-grid">${photos.map(p=>`<div class="photo-thumb"><img src="${p.src}"><div class="photo-label">${cat}</div></div>`).join('')}</div>
+          </div>`).join('')}
+      </div>`;
+  }
+
+  // Price breakdown for summary
+  let materialCost = 0;
+  state.lineItems.forEach(item => {
+    const col = COLOURS[item.colourIdx];
+    const price = col.type === 'foil' && item.priceFoil ? item.priceFoil : item.priceGloss;
+    materialCost += price * item.qty;
+  });
+  const discAmt = materialCost * 0.5;
+  const sub = (materialCost - discAmt) + FIXED_COSTS;
+  const vat = sub * 0.2;
+  const override = parseFloat(document.getElementById('overridePrice')?.value) || null;
+  const finalTotal = override || (sub + vat);
+
+  document.getElementById('summaryContent').innerHTML = `
+    <div class="card">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:12px">
+        <div>
+          <div style="font-family:'DM Serif Display',serif;font-size:22px">${fn} ${ln}</div>
+          <div class="text-small">${[addr,town,pc].filter(Boolean).join(', ')}</div>
+        </div>
+        <span class="status-chip dot ${fn||ln?'ready':'draft'}">${fn||ln?'Ready':'Draft'}</span>
+      </div>
+      <div class="separator"></div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;font-size:12px">
+        <div><div class="text-small">Quote No.</div><strong>${qn||'—'}</strong></div>
+        <div><div class="text-small">Valid Until</div><strong>${vdFmt}</strong></div>
+        <div><div class="text-small">Consultant</div><strong>${con||'—'}</strong></div>
+        <div><div class="text-small">Fitting</div><strong>${state.fitting==='included'?'Fitting Included':'Supply Only'}</strong></div>
+        <div><div class="text-small">Enquiry Type</div><strong>${state.enquiry}</strong></div>
+        <div><div class="text-small">Payment</div><strong>${state.paymentMethod}</strong></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title"><div class="icon">📦</div> Items Quoted</div>
+      ${state.lineItems.length > 0 ? `
+        <table style="width:100%;border-collapse:collapse">
+          <thead><tr style="border-bottom:1.5px solid var(--cream-dark)">
+            <th style="text-align:left;padding:6px 0;font-size:10px;text-transform:uppercase;color:var(--slate)">Item</th>
+            <th style="text-align:center;padding:6px 0;font-size:10px;text-transform:uppercase;color:var(--slate)">Qty</th>
+            <th style="text-align:right;padding:6px 0;font-size:10px;text-transform:uppercase;color:var(--slate)">Cost</th>
+          </tr></thead>
+          <tbody>${itemsHtml}</tbody>
+        </table>
+      ` : '<p class="text-small" style="text-align:center;padding:14px">No items added.</p>'}
+    </div>
+
+    <div class="card" style="background:var(--navy);border:none">
+      <div class="card-title" style="color:white"><div class="icon" style="background:rgba(201,168,76,0.2)">💷</div> Price Summary</div>
+      <table style="width:100%;border-collapse:collapse;font-size:14px;color:rgba(255,255,255,0.8)">
+        <tr style="border-bottom:1px solid rgba(255,255,255,0.1)"><td style="padding:8px 0">Materials</td><td style="text-align:right">£${materialCost.toFixed(2)}</td></tr>
+        <tr style="border-bottom:1px solid rgba(255,255,255,0.1)"><td style="padding:8px 0;color:var(--gold-light)">Special Offer (50%)</td><td style="text-align:right;color:var(--gold-light)">−£${discAmt.toFixed(2)}</td></tr>
+        <tr style="border-bottom:1px solid rgba(255,255,255,0.1)"><td style="padding:8px 0">Survey + IWA + Disposal</td><td style="text-align:right">£${FIXED_COSTS.toFixed(2)}</td></tr>
+        <tr style="border-bottom:1px solid rgba(255,255,255,0.1)"><td style="padding:8px 0">VAT (20%)</td><td style="text-align:right">£${vat.toFixed(2)}</td></tr>
+        ${override?`<tr style="border-bottom:1px solid rgba(255,255,255,0.1)"><td style="padding:8px 0;color:var(--gold-light)">Override</td><td style="text-align:right;color:var(--gold-light)">£${override.toFixed(2)}</td></tr>`:''}
+        <tr><td style="padding:14px 0 4px;font-family:'DM Serif Display',serif;font-size:18px;color:white">TOTAL</td><td style="text-align:right;padding:14px 0 4px;font-family:'DM Serif Display',serif;font-size:18px;color:var(--gold-light)">£${finalTotal.toFixed(2)}</td></tr>
+      </table>
+    </div>
+
+    ${photosHtml}
+  `;
+}
+
+// ════════════════════════════════════
+// MODALS
+// ════════════════════════════════════
+function closeModalOverlay(e) {
+  if(e.target.classList.contains('modal-overlay')) {
+    document.querySelectorAll('.modal-overlay').forEach(m => m.classList.remove('open'));
+  }
+}
+
+// ════════════════════════════════════
+// SHARE SHEET
+// ════════════════════════════════════
+function openShareSheet() {
+  renderSummary();
+  const fn = document.getElementById('firstName').value;
+  const ln = document.getElementById('lastName').value;
+  const name = (fn + ' ' + ln).trim() || 'Customer';
+  const total = document.getElementById('barTotal').textContent;
+  document.getElementById('shareSheetSub').textContent = `${name} · ${total}`;
+  document.getElementById('shareSheet').classList.add('open');
+}
+function closeShareSheet() {
+  document.getElementById('shareSheet').classList.remove('open');
+}
+
+// ════════════════════════════════════
+// PDF GENERATION
+// ════════════════════════════════════
+async function generateAndShare(method) {
+  closeShareSheet();
+
+  // Show spinner
+  const overlay = document.getElementById('pdfOverlay');
+  const sub = document.getElementById('pdfOverlaySub');
+  overlay.classList.add('open');
+  sub.textContent = 'Building your document…';
+
+  try {
+    await new Promise(r => setTimeout(r, 80)); // allow UI to update
+
+    // ── Gather all data ──
+    const fn   = document.getElementById('firstName').value || '';
+    const ln   = document.getElementById('lastName').value  || '';
+    const addr = document.getElementById('address').value   || '';
+    const town = document.getElementById('town').value      || '';
+    const pc   = document.getElementById('postcode').value  || '';
+    const mob  = document.getElementById('mobile').value    || '';
+    const email= document.getElementById('email').value     || '';
+    const qn   = document.getElementById('quoteNumber').value || '';
+    const con  = document.getElementById('consultant').value || '';
+    const conMob= document.getElementById('consMobile').value || '';
+    const conEmail= document.getElementById('consEmail').value || '';
+    const vd   = document.getElementById('validUntil').value || '';
+    const vdFmt= vd ? new Date(vd).toLocaleDateString('en-GB',{day:'numeric',month:'long',year:'numeric'}) : '—';
+    const notes= document.getElementById('notes').value || '';
+    const todayFmt = new Date().toLocaleDateString('en-GB',{day:'numeric',month:'long',year:'numeric'});
+
+    // ── Calculate totals ──
+    let materialCost = 0;
+    state.lineItems.forEach(item => {
+      const col = COLOURS[item.colourIdx];
+      const price = col.type === 'foil' && item.priceFoil ? item.priceFoil : item.priceGloss;
+      materialCost += price * item.qty;
+    });
+    const discAmt = materialCost * 0.5;
+    const sub2 = (materialCost - discAmt) + FIXED_COSTS;
+    const vat  = sub2 * 0.2;
+    const override = parseFloat(document.getElementById('overridePrice')?.value) || null;
+    const finalTotal = override || (sub2 + vat);
+
+    sub.textContent = 'Rendering pages…';
+    await new Promise(r => setTimeout(r, 50));
+
+    // ── Build items rows HTML ──
+    const itemRows = state.lineItems.map(item => {
+      const col = COLOURS[item.colourIdx];
+      const price = col.type === 'foil' && item.priceFoil ? item.priceFoil : item.priceGloss;
+      const lineTotal = (price * item.qty).toFixed(2);
+      return `<tr>
+        <td><span class="pdf-colour-dot" style="background:${col.hex}"></span>${item.name}</td>
+        <td style="color:#4a5568;font-size:11px">${col.short} · ${col.type}</td>
+        <td style="text-align:center">${item.qty} ${item.unit}</td>
+        <td style="text-align:right">£${price.toFixed(2)}</td>
+        <td>£${lineTotal}</td>
+      </tr>`;
+    }).join('');
+
+    // ── Build photo pages HTML ──
+    let photoPagesHtml = '';
+    if (state.photos.length > 0) {
+      const grouped = {};
+      state.photos.forEach(p => {
+        if (!grouped[p.category]) grouped[p.category] = [];
+        grouped[p.category].push(p);
+      });
+
+      const photoChunks = [];
+      for (const [cat, photos] of Object.entries(grouped)) {
+        // 6 photos per page chunk
+        for (let i = 0; i < photos.length; i += 6) {
+          photoChunks.push({ cat, photos: photos.slice(i, i+6) });
+        }
+      }
+
+      // Group chunks into pages (2 categories per page max)
+      let currentPageItems = [];
+      const photoPages = [];
+      photoChunks.forEach(chunk => {
+        currentPageItems.push(chunk);
+        if (currentPageItems.length >= 2) {
+          photoPages.push([...currentPageItems]);
+          currentPageItems = [];
+        }
+      });
+      if (currentPageItems.length) photoPages.push(currentPageItems);
+
+      photoPages.forEach((pageCats, pi) => {
+        let pageContent = '';
+        pageCats.forEach(({ cat, photos }) => {
+          const info = PHOTO_CATS[cat] || { icon: '📷' };
+          const photoItems = photos.map(p =>
+            `<div class="pdf-photo-item">
+              <img src="${p.src}" crossorigin="anonymous">
+              <div class="pdf-photo-label">${info.icon} ${cat}</div>
+            </div>`
+          ).join('');
+          pageContent += `
+            <div style="margin-bottom:16px">
+              <div style="font-size:11px;font-weight:bold;text-transform:uppercase;letter-spacing:0.08em;color:#c9a84c;margin-bottom:8px">${info.icon} ${cat} Photos</div>
+              <div class="pdf-photo-grid">${photoItems}</div>
+            </div>`;
+        });
+
+        photoPagesHtml += `
+          <div class="pdf-page">
+            <div class="pdf-header">
+              <div class="pdf-logo-area">
+                <div class="pdf-logo-mark">R</div>
+                <div><div class="pdf-logo-name">Roofline Pro</div><div class="pdf-logo-sub">Site Photos</div></div>
+              </div>
+              <div class="pdf-quote-meta">
+                <div class="pdf-quote-num">${qn || 'QUOTE'}</div>
+                <div class="pdf-quote-date">${(fn+' '+ln).trim() || 'Customer'} · Photos Page ${pi+1}</div>
+              </div>
+            </div>
+            ${pageContent}
+            <div class="pdf-footer">
+              <span>Roofline Pro · Site Survey Photos</span>
+              <span>Page ${pi+2} · ${qn}</span>
+            </div>
+          </div>`;
+      });
+    }
+
+    // ── Assemble full PDF doc ──
+    const pdfDoc = document.getElementById('pdfDoc');
+    pdfDoc.innerHTML = `
+      <!-- PAGE 1: QUOTE -->
+      <div class="pdf-page">
+        <div class="pdf-header">
+          <div class="pdf-logo-area">
+            <div class="pdf-logo-mark">R</div>
+            <div>
+              <div class="pdf-logo-name">Roofline Pro</div>
+              <div class="pdf-logo-sub">Quotation Document</div>
+            </div>
+          </div>
+          <div class="pdf-quote-meta">
+            <div class="pdf-quote-num">${qn || 'NEW QUOTE'}</div>
+            <div class="pdf-quote-date">Issued: ${todayFmt}</div>
+          </div>
+        </div>
+
+        <!-- Customer & Consultant -->
+        <div class="pdf-grid-2">
+          <div>
+            <div class="pdf-section-title" style="margin-top:0">Customer</div>
+            <div style="margin-bottom:8px"><div class="pdf-field-label">Name</div><div class="pdf-field-value">${(fn+' '+ln).trim() || '—'}</div></div>
+            <div style="margin-bottom:8px"><div class="pdf-field-label">Address</div><div class="pdf-field-value">${[addr,town,pc].filter(Boolean).join(', ') || '—'}</div></div>
+            <div style="margin-bottom:8px"><div class="pdf-field-label">Mobile</div><div class="pdf-field-value">${mob || '—'}</div></div>
+            <div><div class="pdf-field-label">Email</div><div class="pdf-field-value">${email || '—'}</div></div>
+          </div>
+          <div>
+            <div class="pdf-section-title" style="margin-top:0">Consultant</div>
+            <div style="margin-bottom:8px"><div class="pdf-field-label">Name</div><div class="pdf-field-value">${con || '—'}</div></div>
+            <div style="margin-bottom:8px"><div class="pdf-field-label">Mobile</div><div class="pdf-field-value">${conMob || '—'}</div></div>
+            <div style="margin-bottom:8px"><div class="pdf-field-label">Email</div><div class="pdf-field-value">${conEmail || '—'}</div></div>
+            <div style="margin-bottom:8px"><div class="pdf-field-label">Enquiry Type</div><div class="pdf-field-value">${state.enquiry}</div></div>
+            <div><div class="pdf-field-label">Quote Valid Until</div><div class="pdf-field-value">${vdFmt}</div></div>
+          </div>
+        </div>
+
+        <!-- Special Offer Banner -->
+        <div class="pdf-offer-banner">
+          <div class="pdf-offer-left">
+            <div class="pdf-offer-title">★ Special Offer Applied</div>
+            <div class="pdf-offer-sub">Half-price materials discount</div>
+          </div>
+          <div class="pdf-offer-pct">50%</div>
+        </div>
+
+        <!-- Items -->
+        <div class="pdf-section-title">Quoted Items</div>
+        ${state.lineItems.length > 0 ? `
+        <table class="pdf-items-table">
+          <thead>
+            <tr>
+              <th>Description</th>
+              <th>Colour / Finish</th>
+              <th style="text-align:center">Qty</th>
+              <th style="text-align:right">Unit Price</th>
+              <th style="text-align:right">Total</th>
+            </tr>
+          </thead>
+          <tbody>${itemRows}</tbody>
+        </table>` : '<p style="color:#4a5568;font-style:italic;margin-bottom:16px">No items added.</p>'}
+
+        <!-- Always Included -->
+        <div class="pdf-section-title">Always Included</div>
+        <div class="pdf-included">
+          <div class="pdf-included-item"><div class="label">📐 Survey</div><div class="val">£30.00</div></div>
+          <div class="pdf-included-item"><div class="label">🛡️ IWA</div><div class="val">£30.00</div></div>
+          <div class="pdf-included-item"><div class="label">🗑️ Disposal</div><div class="val">£20.00</div></div>
+          <div class="pdf-included-item"><div class="label">🔧 Fitting</div><div class="val">${state.fitting === 'included' ? 'Included' : 'Supply Only'}</div></div>
+        </div>
+
+        <!-- Totals -->
+        <div class="pdf-totals">
+          <div class="pdf-total-row"><span>Materials (list price)</span><span>£${materialCost.toFixed(2)}</span></div>
+          <div class="pdf-total-row" style="color:#2d6a4f"><span>Special Offer Discount (50%)</span><span>−£${discAmt.toFixed(2)}</span></div>
+          <div class="pdf-total-row"><span>Survey + IWA + Disposal</span><span>£${FIXED_COSTS.toFixed(2)}</span></div>
+          <div class="pdf-total-row"><span>Sub-total (ex. VAT)</span><span>£${sub2.toFixed(2)}</span></div>
+          <div class="pdf-total-row"><span>VAT (20%)</span><span>£${vat.toFixed(2)}</span></div>
+          ${override ? `<div class="pdf-total-row" style="color:#c9a84c"><span>Override Applied</span><span>£${override.toFixed(2)}</span></div>` : ''}
+          <div class="pdf-total-row"><span>TOTAL PAYABLE</span><span>£${finalTotal.toFixed(2)}</span></div>
+        </div>
+        <div class="pdf-saving-highlight">
+          <span>✅ Customer saving on this quote:</span>
+          <span>£${discAmt.toFixed(2)}</span>
+        </div>
+
+        <!-- Payment & Notes -->
+        <div class="pdf-section-title">Payment & Notes</div>
+        <div class="pdf-payment-box" style="margin-bottom:${notes?'12px':'0'}">
+          <div class="pdf-field-label">Payment Method</div>
+          <div class="pdf-field-value">${state.paymentMethod}</div>
+          ${state.paymentMethod === 'Finance' ? `
+          <div style="margin-top:10px;display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px">
+            <div><div class="pdf-field-label">Deposit (10%)</div><div class="pdf-field-value">£${(finalTotal*0.1).toFixed(2)}</div></div>
+            <div><div class="pdf-field-label">On Completion (90%)</div><div class="pdf-field-value">£${(finalTotal*0.9).toFixed(2)}</div></div>
+            <div><div class="pdf-field-label">Total Payable</div><div class="pdf-field-value">£${finalTotal.toFixed(2)}</div></div>
+          </div>` : ''}
+        </div>
+        ${notes ? `<div style="background:#f8f4ec;border-radius:8px;padding:12px 14px;font-size:12px;color:#1a2744;line-height:1.5"><strong>Notes:</strong><br>${notes.replace(/\n/g,'<br>')}</div>` : ''}
+
+        <div class="pdf-footer">
+          <span>Roofline Pro · Professional Roofline Quotation</span>
+          <span>Page 1 · ${qn || 'QUOTE'} · ${todayFmt}</span>
+        </div>
+      </div>
+
+      ${photoPagesHtml}
+    `;
+
+    sub.textContent = 'Rendering to PDF…';
+    await new Promise(r => setTimeout(r, 100));
+
+    // ── Render with html2canvas → jsPDF ──
+    const { jsPDF } = window.jspdf;
+    const pdf = new jsPDF({ orientation: 'portrait', unit: 'pt', format: 'a4' });
+    const A4_W = 595, A4_H = 842;
+
+    const pages = pdfDoc.querySelectorAll('.pdf-page');
+    for (let i = 0; i < pages.length; i++) {
+      sub.textContent = `Rendering page ${i+1} of ${pages.length}…`;
+      await new Promise(r => setTimeout(r, 30));
+
+      const canvas = await html2canvas(pages[i], {
+        scale: 2,
+        useCORS: true,
+        allowTaint: true,
+        backgroundColor: '#ffffff',
+        width: 794,
+        windowWidth: 794,
+        logging: false
+      });
+
+      const imgData = canvas.toDataURL('image/jpeg', 0.92);
+      if (i > 0) pdf.addPage();
+      pdf.addImage(imgData, 'JPEG', 0, 0, A4_W, A4_H);
+    }
+
+    // ── Filename ──
+    const custName = (fn + '_' + ln).replace(/\s+/g,'_').replace(/[^a-zA-Z0-9_]/g,'') || 'Customer';
+    const filename = `Roofline_Quote_${custName}_${qn || 'DRAFT'}.pdf`;
+
+    // ── Deliver ──
+    sub.textContent = 'Done! Opening…';
+    await new Promise(r => setTimeout(r, 200));
+    overlay.classList.remove('open');
+
+    if (method === 'download') {
+      pdf.save(filename);
+      showToast('✅ PDF downloaded!');
+
+    } else if (method === 'email') {
+      const blob = pdf.output('blob');
+      const file = new File([blob], filename, { type: 'application/pdf' });
+
+      if (navigator.canShare && navigator.canShare({ files: [file] })) {
+        // Native share with file (Android Chrome, iOS Safari 15.1+)
+        await navigator.share({
+          title: `Roofline Quote – ${(fn+' '+ln).trim() || 'Customer'}`,
+          text: `Please find your roofline quotation attached. Quote ref: ${qn || 'N/A'} · Total: £${finalTotal.toFixed(2)}`,
+          files: [file]
+        });
+      } else {
+        // Fallback: download + open mailto
+        pdf.save(filename);
+        const custEmail = email || '';
+        const subject = encodeURIComponent(`Roofline Quotation – ${qn || 'Quote'}`);
+        const body = encodeURIComponent(`Dear ${fn || 'Customer'},\n\nPlease find your roofline quotation attached.\n\nQuote Reference: ${qn || 'N/A'}\nTotal Payable: £${finalTotal.toFixed(2)}\nValid Until: ${vdFmt}\n\nKind regards,\n${con || 'The Roofline Team'}`);
+        window.location.href = `mailto:${custEmail}?subject=${subject}&body=${body}`;
+        showToast('📧 PDF saved – attach from Downloads');
+      }
+
+    } else if (method === 'whatsapp') {
+      const blob = pdf.output('blob');
+      const file = new File([blob], filename, { type: 'application/pdf' });
+
+      if (navigator.canShare && navigator.canShare({ files: [file] })) {
+        await navigator.share({
+          title: `Roofline Quote – ${(fn+' '+ln).trim()}`,
+          text: `Your Roofline Quote · ${qn} · £${finalTotal.toFixed(2)}`,
+          files: [file]
+        });
+      } else {
+        pdf.save(filename);
+        showToast('📥 PDF saved – share from Downloads');
+      }
+    }
+
+  } catch (err) {
+    overlay.classList.remove('open');
+    console.error('PDF error:', err);
+    showToast('⚠️ PDF error – try Print instead');
+  }
+}
+
+function printQuote() { window.print(); }
+
+function newQuote() {
+  if (!confirm('Start a new quote? All data will be cleared.')) return;
+  location.reload();
+}
+
+function showToast(msg) {
+  const t = document.createElement('div');
+  t.style.cssText = 'position:fixed;bottom:90px;left:50%;transform:translateX(-50%);background:var(--navy);color:white;padding:12px 22px;border-radius:20px;font-size:14px;font-weight:500;z-index:9999;box-shadow:var(--shadow-lg);animation:fadeIn .2s;white-space:nowrap';
+  t.textContent = msg;
+  document.body.appendChild(t);
+  setTimeout(() => t.remove(), 3000);
+}
+</script>
+</body>
+</html>
